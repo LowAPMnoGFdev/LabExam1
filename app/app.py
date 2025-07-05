@@ -1,15 +1,27 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
 import pickle
+import warnings
 from sklearn.preprocessing import StandardScaler
+
+# Suppress scikit-learn version warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
 
 # Load the trained model and scaler
 @st.cache_resource
 def load_model():
-    with open('wine_model.pkl', 'rb') as file:
-        model, scaler = pickle.load(file)
-    return model, scaler
+    try:
+        with open('wine_model.pkl', 'rb') as file:
+            model, scaler = pickle.load(file)
+        return model, scaler
+    except FileNotFoundError:
+        st.error("Model file 'wine_model.pkl' not found. Please ensure the model file is in the same directory as this app.")
+        st.stop()
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
+        st.stop()
 
 # Set page title
 st.set_page_config(page_title="Wine Quality Prediction", page_icon="🍷")
@@ -87,7 +99,6 @@ if st.button("Predict Quality"):
             'Feature': feature_names,
             'Importance': model.feature_importances_
         }).sort_values('Importance', ascending=False)
-        st.subheader("Quality Factors")
         st.write("Top factors influencing wine quality:")
         st.bar_chart(feature_importance.set_index('Feature').head())
         # Suggestion based on prediction
